@@ -51,15 +51,37 @@ export default function ApplyJobPage() {
     );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Application submitted:', {
-      jobId: id,
-      applicant: address,
-      ...formData,
-      submittedAt: new Date().toISOString()
-    });
-    router.push('/jobs');
+    
+    try {
+      const response = await fetch(`http://localhost:9999/api/jobs/${id}/applicants`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          walletAddress: address,
+          resume: formData.resume,
+          coverLetter: formData.coverLetter,
+          portfolio: formData.portfolio,
+          references: formData.references
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit application');
+      }
+
+      // Successful submission
+      alert('Application submitted successfully!');
+      router.push('/jobs');
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      alert('Failed to submit application. Please try again.');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

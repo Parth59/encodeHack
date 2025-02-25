@@ -3,10 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import Link from 'next/link';
-import { jobListings } from '@/app/data/jobListings';
+import { JobListing } from '@/app/data/jobListings';
 import TalentProtocolABI from '@/app/data/abi.json';
 import { ethers } from 'ethers';
-const talentProtocolSC = "0x838382076023ddf7998f0f8280dd9b47d9cf986b";
+const talentProtocolSC = "0xf8cD919D9612036a336468c826504F234c150Ff3";
 
 
 interface TokenModalProps {
@@ -85,23 +85,50 @@ const DocumentLink: React.FC<{ href: string; label: string }> = ({ href, label }
 
 
 export default function ManageJobPage() {
-
-
-    
-
-    const { id } = useParams();
-    const job = jobListings.find(job => job.id === Number(id));
-
-    // Mock applicants data (replace with your actual data structure)
-    const mockApplicants = job?.applicants;
-
+  const { id } = useParams();
   const router = useRouter();
   const { isConnected, address } = useAccount();
-  
+  const { writeContract, isSuccess } = useWriteContract();
+  const readContract = useReadContract({
+    address: talentProtocolSC,
+    abi: TalentProtocolABI,
+    functionName: 'balanceOf',
+    query: {
+      enabled: false, 
+    },
+    args: ["0x0469FeBCB23e788e9611d7Bfb6Ee71AC04EF6DfA"]
+  });
+
+  const [job, setJob] = useState<JobListing | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedJob, setEditedJob] = useState(job);
+  const [editedJob, setEditedJob] = useState<JobListing | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedApplicant, setSelectedApplicant] = useState<typeof mockApplicants[0] | null>(null);
+  const [selectedApplicant, setSelectedApplicant] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchJob = async () => {
+      try {
+        const response = await fetch(`http://localhost:9999/api/jobs/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch job');
+        }
+        const data = await response.json();
+        setJob(data);
+        setEditedJob(data);
+      } catch (error) {
+        console.error('Error fetching job:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJob();
+  }, [id]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   if (!job) {
     return (
@@ -146,25 +173,13 @@ export default function ManageJobPage() {
     setIsModalOpen(true);
   };
 
-  const readContract = useReadContract({
-    address: talentProtocolSC,
-    abi: TalentProtocolABI,
-    functionName: 'balanceOf',
-    query: {
-      enabled: false, 
-    },
-    args: ["0x0469FeBCB23e788e9611d7Bfb6Ee71AC04EF6DfA"]
-  })
-
-  const { writeContract, isSuccess } = useWriteContract();
-
-  const handleTokenSubmit = async (amount: string, walletAddress : string) => {
-     writeContract({
-        address: talentProtocolSC,
-        abi: TalentProtocolABI,
-        functionName: 'transfer',
-        args: [walletAddress, Number(amount)*(10**18)],
-      })
+  const handleTokenSubmit = async (amount: string, walletAddress: string) => {
+    writeContract({
+      address: talentProtocolSC,
+      abi: TalentProtocolABI,
+      functionName: 'transfer',
+      args: [walletAddress, Number(amount)*(10**18)],
+    });
     setIsModalOpen(false);
   };
 
@@ -232,11 +247,11 @@ export default function ManageJobPage() {
         {/* Applicants Section */}
         <div className="bg-white shadow-md rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Applicants</h2>
-          {mockApplicants.length === 0 ? (
+          {job.applicants.length === 0 ? (
             <p className="text-gray-500 text-center py-4">No applications yet</p>
           ) : (
             <div className="space-y-4">
-              {mockApplicants.map((applicant) => (
+              {job.applicants.map((applicant) => (
                 <div key={applicant.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>
