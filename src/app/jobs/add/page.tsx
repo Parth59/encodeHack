@@ -17,17 +17,63 @@ export default function AddJobPage() {
     logo: 'https://via.placeholder.com/50',
     link: '',
   });
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const generateJobDescription = async () => {
+    if (!formData.title || !formData.company) {
+      alert('Please enter job title and company name first');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch('http://localhost:9999/api/generate-description', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          company: formData.company,
+          location: formData.location,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate description');
+      
+      const data = await response.json();
+      setFormData(prev => ({ ...prev, description: data.description }));
+    } catch (error) {
+      console.error('Error generating description:', error);
+      alert('Failed to generate description. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('New Job:', { 
-      ...formData, 
-      status: 'Open', 
-      id: Date.now(),
-      postedBy: address,
-      postedAt: new Date().toISOString()
-    });
-    router.push('/jobs');
+    try {
+      const response = await fetch('http://localhost:9999/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          ...formData, 
+          status: 'Open', 
+          postedBy: address,
+          postedAt: new Date().toISOString()
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create job');
+      
+      router.push('/jobs');
+    } catch (error) {
+      console.error('Error creating job:', error);
+      alert('Failed to create job. Please try again.');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -64,6 +110,8 @@ export default function AddJobPage() {
           address={address}
           onChange={handleChange}
           onSubmit={handleSubmit}
+          onGenerateDescription={generateJobDescription}
+          isGenerating={isGenerating}
         />
       </div>
     </div>

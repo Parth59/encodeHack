@@ -6,13 +6,17 @@ interface JobFormProps {
   address: string | undefined;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
+  onGenerateDescription: () => void;
+  isGenerating: boolean;
 }
 
 export const JobForm: React.FC<JobFormProps> = ({
   formData,
   address,
   onChange,
-  onSubmit
+  onSubmit,
+  onGenerateDescription,
+  isGenerating
 }) => (
   <form onSubmit={onSubmit} className="bg-white shadow-md rounded-lg p-6">
     <div className="space-y-4">
@@ -65,8 +69,20 @@ export const JobForm: React.FC<JobFormProps> = ({
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Job Description</label>
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Description
+        </label>
+        <div className="flex gap-2 mb-2">
+          <button
+            type="button"
+            onClick={onGenerateDescription}
+            disabled={isGenerating}
+            className="text-sm text-blue-500 hover:text-blue-600 disabled:text-gray-400"
+          >
+            {isGenerating ? 'Generating...' : '✨ Generate with AI'}
+          </button>
+        </div>
         <textarea
           name="description"
           value={formData.description}
@@ -74,7 +90,7 @@ export const JobForm: React.FC<JobFormProps> = ({
           required
           rows={6}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Enter the full job description here..."
+          placeholder="Detailed job description..."
         />
       </div>
 
